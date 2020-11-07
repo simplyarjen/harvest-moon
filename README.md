@@ -1,4 +1,4 @@
-# harvest-moon
+# Harvest Moon
 
 Moon-themed RTS game.
 
@@ -6,8 +6,8 @@ Moon-themed RTS game.
 
 - [x] As a player I want to see a flat map
 - [x] As a player I want to toggle grid lines on the map
-- [ ] As a player I want to pause a game
-- [ ] As a player I want to move around the map
+- [x] As a player I want to pause a game
+- [ ] As a player I want to move the map around 
 - [ ] As a player I want to save and load a game
 - [ ] As a player I want to zoom in and out on the map
 - [ ] As a player I want the map tile under my cursor to be highlighted
@@ -36,6 +36,15 @@ Epics
 - Particles
 - Random maps`
 - Achievements
+
+## Credits
+
+Harvest Moon is made possible thanks to the following awesome free and open source resources:
+
+* libGDX [www.libgdx.com](https://www.libgdx.com/) ([license](credits/libGDX-license))
+* graphics by Kenney [kenney.nl](https://kenney.nl/) ([license](credits/kenney-license))
+  * [Game Icons](https://kenney.nl/assets/game-icons)
+  * [UI Pack: Space Expansion](https://kenney.nl/assets/ui-pack-space-expansion)
 
 ## License
 
