@@ -1,6 +1,6 @@
 # harvest-moon
 
-moon-themed RTS game.
+Moon-themed RTS game.
 
 ## Work in progress
 
@@ -39,5 +39,6 @@ Epics
 
 ## License
 
-Copyright (c) 2020 Arjen Stolk
+Copyright (c) 2020 Arjen Stolk.
+
 Distributed under the terms of the MIT license, see [LICENSE](LICENSE) for the full license. 
