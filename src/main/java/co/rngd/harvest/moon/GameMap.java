@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.g3d.attributes.*;
 import com.badlogic.gdx.graphics.g3d.environment.*;
 
 public class GameMap {
-  private final int width, height;
+  public final int width, height;
 
   public GameMap(int width, int height) {
     this.width = width;

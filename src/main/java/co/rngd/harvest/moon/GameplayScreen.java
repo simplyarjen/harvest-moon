@@ -15,12 +15,15 @@ public class GameplayScreen extends ScreenAdapter {
 
   private GameMap map;
 
+  private Vector3 focalPoint = new Vector3(0, 0, 0);
+  private float pan = (float) Math.PI / 3, tilt = (float) Math.PI / 6, distance = 30f;
   private PerspectiveCamera camera;
+
   private Environment environment;
 
   private ModelInstance mapModel;
   private ModelInstance gridModel;
-  private boolean showGrid;
+  private boolean showGrid = true;
 
   private Texture pauseButton;
   private boolean pauseMode;
@@ -39,16 +42,15 @@ public class GameplayScreen extends ScreenAdapter {
     ModelBuilder modelBuilder = new ModelBuilder();
     mapModel = new ModelInstance(map.createSurfaceModel(modelBuilder));
     gridModel = new ModelInstance(map.createGridModel(modelBuilder));
+    focalPoint.set(map.height / 2, 0, map.width / 2);
   }
 
   @Override
   public void show() {
     camera = new PerspectiveCamera(30, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-    camera.position.set(16f, 10f, 24f);
-    camera.lookAt(10, 0, 10);
     camera.near = 1f;
     camera.far = 300f;
-    camera.update();
+    updateCamera();
 
     Gdx.input.setInputProcessor(new Controller());
     environment = new Environment();
@@ -60,12 +62,24 @@ public class GameplayScreen extends ScreenAdapter {
     messageFont = new BitmapFont(true);
   }
 
+  private void updateCamera() {
+    camera.position.set((float) (Math.sin(pan) * Math.cos(tilt) * distance),
+                        (float) (                Math.sin(tilt) * distance),
+                        (float) (Math.cos(pan) * Math.cos(tilt) * distance))
+                   .add(focalPoint);
+    camera.lookAt(focalPoint);
+    camera.up.set(0, 1, 0);
+    camera.normalizeUp();
+    camera.update();
+  }
+
   @Override
   public void resize(int width, int height) {
     if (camera == null) return;
     camera.viewportWidth = width;
     camera.viewportHeight = height;
-    camera.update();
+    updateCamera();
+
     spriteBatch.setProjectionMatrix(new Matrix4().setToOrtho2D(0, height, width, -height));
   }
 
@@ -84,13 +98,40 @@ public class GameplayScreen extends ScreenAdapter {
     Gdx.gl.glViewport(0, 0, width, height);
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
+    if (!pauseMode) {
+      if (Gdx.input.isKeyPressed(Input.Keys.UP))
+        focalPoint.sub((float) Math.sin(pan) * delta * 10f, 0 , (float) Math.cos(pan) * delta * 10f);
+      if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
+        focalPoint.add((float) Math.sin(pan) * delta * 10f, 0 , (float) Math.cos(pan) * delta * 10f);
+      if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
+        focalPoint.add((float) -Math.cos(pan) * delta * 10f, 0 , (float) Math.sin(pan) * delta * 10f);
+      if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
+        focalPoint.sub((float) -Math.cos(pan) * delta * 10f, 0 , (float) Math.sin(pan) * delta * 10f);
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP)) distance -= delta * 10f;
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN)) distance += delta * 10f;
+      if (Gdx.input.isKeyPressed(Input.Keys.A)) pan -= delta;
+      if (Gdx.input.isKeyPressed(Input.Keys.D)) pan += delta;
+      if (Gdx.input.isKeyPressed(Input.Keys.W)) tilt += delta;
+      if (Gdx.input.isKeyPressed(Input.Keys.S)) tilt -= delta;
+
+      if (focalPoint.x < 0) focalPoint.x = 0;
+      if (focalPoint.x > map.height) focalPoint.x = map.height;
+      if (focalPoint.z < 0) focalPoint.z = 0;
+      if (focalPoint.z > map.width) focalPoint.z = map.width;
+      if (distance < 5f) distance = 5f;
+      if (distance > 100f) distance = 100f;
+      if (tilt < Math.PI * 0.1) tilt = (float) Math.PI * 0.1f;
+      if (tilt > Math.PI * 0.45) tilt = (float) Math.PI * 0.45f;
+      updateCamera();
+    }
+
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
     if (showGrid) modelBatch.render(gridModel, environment);
     modelBatch.end();
 
     spriteBatch.begin();
-    spriteBatch.draw(pauseButton, width - 50, 10, 40, 40); 
+    spriteBatch.draw(pauseButton, width - 50, 10, 40, 40);
     if (pauseMode) {
       NinePatch patch = new NinePatch(metalWindow, 10, 10, 10, 10);
       patch.draw(spriteBatch, (width - 200) / 2, (height - 200) / 2, 200, 200);
