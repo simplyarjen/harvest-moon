@@ -131,6 +131,7 @@ public class GameplayScreen extends ScreenAdapter {
       updateCamera();
     }
     pauseButton.update();
+    if (pauseButton.wasPressed()) pauseMode = !pauseMode;
 
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
@@ -158,15 +159,6 @@ public class GameplayScreen extends ScreenAdapter {
       else if (!pauseMode && key == 'p') pauseMode = true;
       else if (pauseMode && key == ' ') pauseMode = false;
       else if (pauseMode && key == 'q') Gdx.app.exit();
-      else return false;
-      return true;
-    }
-
-    @Override
-    public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-      if (button == Input.Buttons.LEFT && screenX > Gdx.graphics.getWidth() - 50 && screenY < 50) {
-        pauseMode = true;
-      }
       else return false;
       return true;
     }
