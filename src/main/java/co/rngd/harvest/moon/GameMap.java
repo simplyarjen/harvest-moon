@@ -36,7 +36,7 @@ public class GameMap {
   }
 
   private void addCell(int row, int column, MeshPartBuilder meshBuilder) {
-    Vector3 vertex[] = controlPoints(row, column, 0f);
+    Vector3 vertex[] = controlPoints(row, column);
     triangle(vertex[0], vertex[1], vertex[4], meshBuilder);
     triangle(vertex[1], vertex[2], vertex[4], meshBuilder);
     triangle(vertex[2], vertex[3], vertex[4], meshBuilder);
@@ -44,20 +44,20 @@ public class GameMap {
   }
 
   private void addGridCell(int row, int column, MeshPartBuilder meshBuilder) {
-    Vector3 vertex[] = controlPoints(row, column, 0.01f);
+    Vector3 vertex[] = controlPoints(row, column);
     meshBuilder.line(vertex[0], vertex[1]);
     meshBuilder.line(vertex[1], vertex[2]);
     meshBuilder.line(vertex[2], vertex[3]);
     meshBuilder.line(vertex[3], vertex[0]);
   }
 
-  private Vector3[] controlPoints(int row, int column, float offset) {
+  private Vector3[] controlPoints(int row, int column) {
     Vector3 vertex[] = new Vector3[5];
-    vertex[0] = new Vector3(row,        offset, column       );
-    vertex[1] = new Vector3(row,        offset, column +   1f);
-    vertex[2] = new Vector3(row +   1f, offset, column +   1f);
-    vertex[3] = new Vector3(row +   1f, offset, column       );
-    vertex[4] = new Vector3(row + 0.5f, offset, column + 0.5f);
+    vertex[0] = new Vector3(row,        0f, column       );
+    vertex[1] = new Vector3(row,        0f, column +   1f);
+    vertex[2] = new Vector3(row +   1f, 0f, column +   1f);
+    vertex[3] = new Vector3(row +   1f, 0f, column       );
+    vertex[4] = new Vector3(row + 0.5f, 0f, column + 0.5f);
     return vertex;
   }
 

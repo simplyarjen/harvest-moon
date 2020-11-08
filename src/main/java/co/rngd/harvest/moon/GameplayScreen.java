@@ -25,8 +25,10 @@ public class GameplayScreen extends ScreenAdapter {
   private ModelInstance gridModel;
   private boolean showGrid = true;
 
-  private Texture pauseButton;
+  private Texture pauseTexture;
+  private ImageButton pauseButton;
   private boolean pauseMode;
+
   private Texture metalWindow;
   private BitmapFont messageFont;
 
@@ -57,9 +59,13 @@ public class GameplayScreen extends ScreenAdapter {
     environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f));
     environment.add(new DirectionalLight().set(0.9f, 0.7f, 0.6f, -1f, -0.8f, -0.2f));
 
-    pauseButton = new Texture("pause.png");
+    pauseTexture = new Texture("pause.png");
+    pauseButton = ImageButton.create(pauseTexture);
+    pauseButton.setPosition(-50, -50);
+    pauseButton.setSize(40, 40);
+
     metalWindow = new Texture("metalPanel.png");
-    messageFont = new BitmapFont(true);
+    messageFont = new BitmapFont();
   }
 
   private void updateCamera() {
@@ -80,14 +86,14 @@ public class GameplayScreen extends ScreenAdapter {
     camera.viewportHeight = height;
     updateCamera();
 
-    spriteBatch.setProjectionMatrix(new Matrix4().setToOrtho2D(0, height, width, -height));
+    spriteBatch.setProjectionMatrix(new Matrix4().setToOrtho2D(0, 0, width, height));
   }
 
   @Override
   public void dispose() {
     if (mapModel != null) mapModel.model.dispose();
     if (gridModel != null) gridModel.model.dispose();
-    pauseButton.dispose();
+    pauseTexture.dispose();
     messageFont.dispose();
   }
 
@@ -124,14 +130,18 @@ public class GameplayScreen extends ScreenAdapter {
       if (tilt > Math.PI * 0.45) tilt = (float) Math.PI * 0.45f;
       updateCamera();
     }
+    pauseButton.update();
 
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
-    if (showGrid) modelBatch.render(gridModel, environment);
+    if (showGrid) {
+      gridModel.transform.setToTranslation(0, distance / 1000f, 0);
+      modelBatch.render(gridModel, environment);
+    }
     modelBatch.end();
 
     spriteBatch.begin();
-    spriteBatch.draw(pauseButton, width - 50, 10, 40, 40);
+    pauseButton.draw(spriteBatch);
     if (pauseMode) {
       NinePatch patch = new NinePatch(metalWindow, 10, 10, 10, 10);
       patch.draw(spriteBatch, (width - 200) / 2, (height - 200) / 2, 200, 200);
