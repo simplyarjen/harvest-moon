@@ -1,5 +1,7 @@
 package co.rngd.harvest.moon;
 
+import java.io.*;
+
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.graphics.*;
@@ -10,6 +12,25 @@ import com.badlogic.gdx.graphics.g3d.attributes.*;
 import com.badlogic.gdx.graphics.g3d.environment.*;
 
 public class GameMap {
+  public static final DataStore<GameMap> Store = new DataStore<GameMap>() {
+    private static final int VERSION = 1;
+
+    @Override
+    public void writeTo(GameMap map, DataOutput output) throws IOException {
+      output.writeInt(VERSION);
+      output.writeInt(map.width);
+      output.writeInt(map.height);
+    }
+
+    @Override
+    public GameMap readFrom(DataInput input) throws IOException {
+      int version = input.readInt();
+      if (version != VERSION) fail("GameMap version mismatch");
+      int width = input.readInt(), height = input.readInt();
+      return new GameMap(width, height);
+    }
+  };
+
   public final int width, height;
 
   public GameMap(int width, int height) {

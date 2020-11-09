@@ -8,7 +8,7 @@ Moon-themed RTS game.
 - [x] As a player I want to toggle grid lines on the map
 - [x] As a player I want to pause a game
 - [x] As a player I want to move the map around 
-- [ ] As a player I want to save and load a game
+- [x] As a player I want to save and load a game
 - [x] As a player I want to zoom in and out on the map
 - [ ] As a player I want the map tile under my cursor to be highlighted
 - [ ] As a level designer I want to vary the height of the map

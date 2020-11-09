@@ -1,5 +1,7 @@
 package co.rngd.harvest.moon;
 
+import java.io.*;
+
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.graphics.*;
@@ -14,20 +16,58 @@ public class GameplayScreen extends ScreenAdapter {
   private final SpriteBatch spriteBatch;
   private final TextureCache textureCache;
 
-  private GameMap map;
+  private State state = new State();
 
-  private Vector3 focalPoint = new Vector3(0, 0, 0);
-  private float pan = (float) Math.PI / 3, tilt = (float) Math.PI / 6, distance = 30f;
+  public static class State {
+    private GameMap map;
+
+    private Vector3 cameraFocus = new Vector3(0, 0, 0);
+    private float pan = (float) Math.PI / 3, tilt = (float) Math.PI / 6, distance = 30f;
+    private boolean pauseMode = false;
+    private boolean showGrid = true;
+
+    public static final DataStore<State> Store = new DataStore<State>() {
+      private static final int VERSION = 1;
+
+      @Override
+      public void writeTo(State state, DataOutput output) throws IOException {
+        output.writeInt(VERSION);
+        output.writeFloat(state.cameraFocus.x);
+        output.writeFloat(state.cameraFocus.y);
+        output.writeFloat(state.cameraFocus.z);
+        output.writeFloat(state.pan);
+        output.writeFloat(state.tilt);
+        output.writeFloat(state.distance);
+        output.writeBoolean(state.pauseMode);
+        output.writeBoolean(state.showGrid);
+        GameMap.Store.writeTo(state.map, output);
+      }
+
+      @Override
+      public State readFrom(DataInput input) throws IOException {
+        if (input.readInt() != VERSION) fail("GameplayScreen.State version mismatch");
+        State state = new State();
+        state.cameraFocus.x = input.readFloat();
+        state.cameraFocus.y = input.readFloat();
+        state.cameraFocus.z = input.readFloat();
+        state.pan = input.readFloat();
+        state.tilt = input.readFloat();
+        state.distance = input.readFloat();
+        state.pauseMode = input.readBoolean();
+        state.showGrid = input.readBoolean();
+        state.map = GameMap.Store.readFrom(input);
+        return state;
+      }
+    };
+  }
+
   private PerspectiveCamera camera;
-
   private Environment environment;
 
   private ModelInstance mapModel;
   private ModelInstance gridModel;
-  private boolean showGrid = true;
 
   private ImageButton pauseButton;
-  private boolean pauseMode;
   private PauseMenu pauseMenu;
 
 
@@ -38,13 +78,26 @@ public class GameplayScreen extends ScreenAdapter {
   }
 
   public void setMap(GameMap map) {
-    this.map = map;
+    state.map = map;
+    state.cameraFocus.set(map.height / 2, 0, map.width / 2);
+
+    rebuildMapModels();
+  }
+
+  private void rebuildMapModels() {
     if (mapModel != null) mapModel.model.dispose();
+    if (gridModel != null) gridModel.model.dispose();
 
     ModelBuilder modelBuilder = new ModelBuilder();
-    mapModel = new ModelInstance(map.createSurfaceModel(modelBuilder));
-    gridModel = new ModelInstance(map.createGridModel(modelBuilder));
-    focalPoint.set(map.height / 2, 0, map.width / 2);
+    mapModel = new ModelInstance(state.map.createSurfaceModel(modelBuilder));
+    gridModel = new ModelInstance(state.map.createGridModel(modelBuilder));
+  }
+
+  public void setState(State state) {
+    this.state = state;
+
+    rebuildMapModels();
+    if (camera != null) updateCamera();
   }
 
   @Override
@@ -67,11 +120,11 @@ public class GameplayScreen extends ScreenAdapter {
   }
 
   private void updateCamera() {
-    camera.position.set((float) (Math.sin(pan) * Math.cos(tilt) * distance),
-                        (float) (                Math.sin(tilt) * distance),
-                        (float) (Math.cos(pan) * Math.cos(tilt) * distance))
-                   .add(focalPoint);
-    camera.lookAt(focalPoint);
+    camera.position.set((float) (Math.sin(state.pan) * Math.cos(state.tilt) * state.distance),
+                        (float) (                      Math.sin(state.tilt) * state.distance),
+                        (float) (Math.cos(state.pan) * Math.cos(state.tilt) * state.distance))
+                   .add(state.cameraFocus);
+    camera.lookAt(state.cameraFocus);
     camera.up.set(0, 1, 0);
     camera.normalizeUp();
     camera.update();
@@ -100,54 +153,59 @@ public class GameplayScreen extends ScreenAdapter {
     Gdx.gl.glViewport(0, 0, width, height);
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
-    if (!pauseMode) {
+    if (!state.pauseMode) {
       if (Gdx.input.isKeyPressed(Input.Keys.UP))
-        focalPoint.sub((float) Math.sin(pan) * delta * 10f, 0 , (float) Math.cos(pan) * delta * 10f);
+        state.cameraFocus.sub((float) Math.sin(state.pan) * delta * 10f, 0 , (float) Math.cos(state.pan) * delta * 10f);
       if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
-        focalPoint.add((float) Math.sin(pan) * delta * 10f, 0 , (float) Math.cos(pan) * delta * 10f);
+        state.cameraFocus.add((float) Math.sin(state.pan) * delta * 10f, 0 , (float) Math.cos(state.pan) * delta * 10f);
       if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-        focalPoint.add((float) -Math.cos(pan) * delta * 10f, 0 , (float) Math.sin(pan) * delta * 10f);
+        state.cameraFocus.add((float) -Math.cos(state.pan) * delta * 10f, 0 , (float) Math.sin(state.pan) * delta * 10f);
       if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-        focalPoint.sub((float) -Math.cos(pan) * delta * 10f, 0 , (float) Math.sin(pan) * delta * 10f);
-      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP)) distance -= delta * 10f;
-      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN)) distance += delta * 10f;
-      if (Gdx.input.isKeyPressed(Input.Keys.A)) pan -= delta;
-      if (Gdx.input.isKeyPressed(Input.Keys.D)) pan += delta;
-      if (Gdx.input.isKeyPressed(Input.Keys.W)) tilt += delta;
-      if (Gdx.input.isKeyPressed(Input.Keys.S)) tilt -= delta;
+        state.cameraFocus.sub((float) -Math.cos(state.pan) * delta * 10f, 0 , (float) Math.sin(state.pan) * delta * 10f);
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP)) state.distance -= delta * 10f;
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN)) state.distance += delta * 10f;
+      if (Gdx.input.isKeyPressed(Input.Keys.A)) state.pan -= delta;
+      if (Gdx.input.isKeyPressed(Input.Keys.D)) state.pan += delta;
+      if (Gdx.input.isKeyPressed(Input.Keys.W)) state.tilt += delta;
+      if (Gdx.input.isKeyPressed(Input.Keys.S)) state.tilt -= delta;
 
-      if (focalPoint.x < 0) focalPoint.x = 0;
-      if (focalPoint.x > map.height) focalPoint.x = map.height;
-      if (focalPoint.z < 0) focalPoint.z = 0;
-      if (focalPoint.z > map.width) focalPoint.z = map.width;
-      if (distance < 5f) distance = 5f;
-      if (distance > 100f) distance = 100f;
-      if (tilt < Math.PI * 0.1) tilt = (float) Math.PI * 0.1f;
-      if (tilt > Math.PI * 0.45) tilt = (float) Math.PI * 0.45f;
+      if (state.cameraFocus.x < 0) state.cameraFocus.x = 0;
+      if (state.cameraFocus.x > state.map.height) state.cameraFocus.x = state.map.height;
+      if (state.cameraFocus.z < 0) state.cameraFocus.z = 0;
+      if (state.cameraFocus.z > state.map.width) state.cameraFocus.z = state.map.width;
+      if (state.distance < 5f) state.distance = 5f;
+      if (state.distance > 100f) state.distance = 100f;
+      if (state.tilt < Math.PI * 0.1) state.tilt = (float) Math.PI * 0.1f;
+      if (state.tilt > Math.PI * 0.45) state.tilt = (float) Math.PI * 0.45f;
       updateCamera();
     }
-    if (pauseButton.wasPressed()) pauseMode = !pauseMode;
-    if (pauseMenu.wasClosePressed()) pauseMode = false;
+    if (pauseButton.wasPressed()) state.pauseMode = !state.pauseMode;
+    if (pauseMenu.wasClosePressed()) state.pauseMode = false;
     if (pauseMenu.wasExitPressed()) Gdx.app.exit();
-    if (pauseMenu.wasLoadPressed()) System.out.println("Load pressed");
-    if (pauseMenu.wasSavePressed()) System.out.println("Save pressed");
+    if (pauseMenu.wasLoadPressed()) {
+      setState(State.Store.read(Gdx.files.external("savegame.dat")));
+    }
+    if (pauseMenu.wasSavePressed()) {
+      State.Store.write(state, Gdx.files.external("savegame.dat"));
+    }
 
     pauseButton.update();
-    if (pauseMode) pauseMenu.update();
+    if (state.pauseMode) pauseMenu.update();
 
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
-    if (showGrid) {
-      gridModel.transform.setToTranslation(0, distance / 1000f, 0);
+    if (state.showGrid) {
+      gridModel.transform.setToTranslation(0, state.distance / 1000f, 0);
       modelBatch.render(gridModel, environment);
     }
     modelBatch.end();
 
     spriteBatch.begin();
     pauseButton.draw(spriteBatch);
-    if (pauseMode) pauseMenu.draw(width, height);
+    if (state.pauseMode) pauseMenu.draw(width, height);
     spriteBatch.end();
   }
+
 
   private class PauseMenu {
     private NinePatch background;
@@ -201,10 +259,10 @@ public class GameplayScreen extends ScreenAdapter {
   private class Controller extends InputAdapter {
     @Override
     public boolean keyTyped(char key) {
-      if (!pauseMode && key == 'g') showGrid = !showGrid;
-      else if (!pauseMode && key == 'p') pauseMode = true;
-      else if (pauseMode && key == ' ') pauseMode = false;
-      else if (pauseMode && key == 'q') Gdx.app.exit();
+      if (!state.pauseMode && key == 'g') state.showGrid = !state.showGrid;
+      else if (!state.pauseMode && key == 'p') state.pauseMode = true;
+      else if (state.pauseMode && key == ' ') state.pauseMode = false;
+      else if (state.pauseMode && key == 'q') Gdx.app.exit();
       else return false;
       return true;
     }
