@@ -28,8 +28,8 @@ public class GameplayScreen extends ScreenAdapter {
 
   private ImageButton pauseButton;
   private boolean pauseMode;
+  private PauseMenu pauseMenu;
 
-  private BitmapFont messageFont;
 
   public GameplayScreen(ModelBatch modelBatch, SpriteBatch spriteBatch, TextureCache textureCache) {
     this.modelBatch = modelBatch;
@@ -59,11 +59,11 @@ public class GameplayScreen extends ScreenAdapter {
     environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f));
     environment.add(new DirectionalLight().set(0.9f, 0.7f, 0.6f, -1f, -0.8f, -0.2f));
 
-    pauseButton = ImageButton.create(textureCache.get("pause.png"));
+    pauseButton = ImageButton.create(textureCache.get("icons/pause.png"));
     pauseButton.setPosition(-50, -50);
     pauseButton.setSize(40, 40);
 
-    messageFont = new BitmapFont();
+    pauseMenu = new PauseMenu();
   }
 
   private void updateCamera() {
@@ -91,7 +91,6 @@ public class GameplayScreen extends ScreenAdapter {
   public void dispose() {
     if (mapModel != null) mapModel.model.dispose();
     if (gridModel != null) gridModel.model.dispose();
-    messageFont.dispose();
   }
 
   @Override
@@ -127,8 +126,14 @@ public class GameplayScreen extends ScreenAdapter {
       if (tilt > Math.PI * 0.45) tilt = (float) Math.PI * 0.45f;
       updateCamera();
     }
-    pauseButton.update();
     if (pauseButton.wasPressed()) pauseMode = !pauseMode;
+    if (pauseMenu.wasClosePressed()) pauseMode = false;
+    if (pauseMenu.wasExitPressed()) Gdx.app.exit();
+    if (pauseMenu.wasLoadPressed()) System.out.println("Load pressed");
+    if (pauseMenu.wasSavePressed()) System.out.println("Save pressed");
+
+    pauseButton.update();
+    if (pauseMode) pauseMenu.update();
 
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
@@ -140,14 +145,57 @@ public class GameplayScreen extends ScreenAdapter {
 
     spriteBatch.begin();
     pauseButton.draw(spriteBatch);
-    if (pauseMode) {
-      TextureRegion metalWindow = textureCache.get("metalPanel.png");
-      NinePatch patch = new NinePatch(metalWindow, 10, 10, 10, 10);
-      patch.draw(spriteBatch, (width - 200) / 2, (height - 200) / 2, 200, 200);
-      messageFont.draw(spriteBatch, "space to resume", (width - 180) / 2, (height + 100) / 2);
-      messageFont.draw(spriteBatch, "q to quit", (width - 180) / 2, (height + 140) / 2);
-    }
+    if (pauseMode) pauseMenu.draw(width, height);
     spriteBatch.end();
+  }
+
+  private class PauseMenu {
+    private NinePatch background;
+    private ImageButton closeButton;
+    private ImageButton exitButton;
+    private ImageButton saveButton;
+    private ImageButton loadButton;
+
+    private PauseMenu() {
+      background = new NinePatch(textureCache.get("panels/metal.png"), 10, 10, 10, 10);
+
+      closeButton = makeButton("icons/cross.png", 20, 20);
+      exitButton = makeButton("icons/exit.png", 50, 50);
+      saveButton = makeButton("icons/import.png", 50, 50);
+      loadButton = makeButton("icons/export.png", 50, 50);
+    }
+
+    private ImageButton makeButton(String name, float w, float h) {
+      ImageButton result = ImageButton.create(textureCache.get(name));
+      result.setSize(w, h);
+      return result;
+    }
+
+    void update() {
+      closeButton.update();
+      exitButton.update();
+      saveButton.update();
+      loadButton.update();
+    }
+
+    void draw(float width, float height) {
+      float x = (width - 200) / 2, y = (height - 200) / 2;
+
+      background.draw(spriteBatch, x, y, 200, 200);
+      closeButton.setPosition(x + 170, y + 170);
+      closeButton.draw(spriteBatch);
+      saveButton.setPosition(x + 20, y + 120);
+      saveButton.draw(spriteBatch);
+      loadButton.setPosition(x + 20, y + 70);
+      loadButton.draw(spriteBatch);
+      exitButton.setPosition(x + 20, y + 20);
+      exitButton.draw(spriteBatch);
+    }
+
+    boolean wasClosePressed() { return closeButton.wasPressed(); }
+    boolean wasSavePressed() { return saveButton.wasPressed(); }
+    boolean wasLoadPressed() { return loadButton.wasPressed(); }
+    boolean wasExitPressed() { return exitButton.wasPressed(); }
   }
 
   private class Controller extends InputAdapter {
