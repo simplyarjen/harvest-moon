@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g3d.environment.*;
 public class GameplayScreen extends ScreenAdapter {
   private final ModelBatch modelBatch;
   private final SpriteBatch spriteBatch;
+  private final TextureCache textureCache;
 
   private GameMap map;
 
@@ -25,16 +26,15 @@ public class GameplayScreen extends ScreenAdapter {
   private ModelInstance gridModel;
   private boolean showGrid = true;
 
-  private Texture pauseTexture;
   private ImageButton pauseButton;
   private boolean pauseMode;
 
-  private Texture metalWindow;
   private BitmapFont messageFont;
 
-  public GameplayScreen(ModelBatch modelBatch, SpriteBatch spriteBatch) {
+  public GameplayScreen(ModelBatch modelBatch, SpriteBatch spriteBatch, TextureCache textureCache) {
     this.modelBatch = modelBatch;
     this.spriteBatch = spriteBatch;
+    this.textureCache = textureCache;
   }
 
   public void setMap(GameMap map) {
@@ -59,12 +59,10 @@ public class GameplayScreen extends ScreenAdapter {
     environment.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f));
     environment.add(new DirectionalLight().set(0.9f, 0.7f, 0.6f, -1f, -0.8f, -0.2f));
 
-    pauseTexture = new Texture("pause.png");
-    pauseButton = ImageButton.create(pauseTexture);
+    pauseButton = ImageButton.create(textureCache.get("pause.png"));
     pauseButton.setPosition(-50, -50);
     pauseButton.setSize(40, 40);
 
-    metalWindow = new Texture("metalPanel.png");
     messageFont = new BitmapFont();
   }
 
@@ -93,7 +91,6 @@ public class GameplayScreen extends ScreenAdapter {
   public void dispose() {
     if (mapModel != null) mapModel.model.dispose();
     if (gridModel != null) gridModel.model.dispose();
-    pauseTexture.dispose();
     messageFont.dispose();
   }
 
@@ -144,6 +141,7 @@ public class GameplayScreen extends ScreenAdapter {
     spriteBatch.begin();
     pauseButton.draw(spriteBatch);
     if (pauseMode) {
+      TextureRegion metalWindow = textureCache.get("metalPanel.png");
       NinePatch patch = new NinePatch(metalWindow, 10, 10, 10, 10);
       patch.draw(spriteBatch, (width - 200) / 2, (height - 200) / 2, 200, 200);
       messageFont.draw(spriteBatch, "space to resume", (width - 180) / 2, (height + 100) / 2);

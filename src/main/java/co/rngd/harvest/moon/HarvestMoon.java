@@ -1,14 +1,14 @@
 package co.rngd.harvest.moon;
 
-import com.badlogic.gdx.Game;
+import com.badlogic.gdx.*;
 import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.graphics.g3d.*;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.backends.lwjgl3.*;
 
 public class HarvestMoon extends Game {
   private ModelBatch modelBatch;
   private SpriteBatch spriteBatch;
+  private TextureCache textureCache;
 
   public static void main(String... args) {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
@@ -18,7 +18,10 @@ public class HarvestMoon extends Game {
   @Override public void create() {
     modelBatch = new ModelBatch();
     spriteBatch = new SpriteBatch();
-    GameplayScreen gameplayScreen = new GameplayScreen(modelBatch, spriteBatch);
+    textureCache = new TextureCache();
+
+    GameplayScreen gameplayScreen = new GameplayScreen(modelBatch, spriteBatch, textureCache);
+
     GameMap map = new GameMap(30, 30);
     gameplayScreen.setMap(map);
     setScreen(gameplayScreen);
@@ -27,5 +30,6 @@ public class HarvestMoon extends Game {
   @Override public void dispose() {
     modelBatch.dispose();
     spriteBatch.dispose();
+    textureCache.dispose();
   }
 }
