@@ -104,7 +104,7 @@ public class GameplayScreen extends ScreenAdapter {
   public void show() {
     camera = new PerspectiveCamera(30, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.near = 1f;
-    camera.far = 300f;
+    camera.far = 500f;
     updateCamera();
 
     Gdx.input.setInputProcessor(new Controller());
@@ -162,8 +162,8 @@ public class GameplayScreen extends ScreenAdapter {
         state.cameraFocus.add((float) -Math.cos(state.pan) * delta * 10f, 0 , (float) Math.sin(state.pan) * delta * 10f);
       if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
         state.cameraFocus.sub((float) -Math.cos(state.pan) * delta * 10f, 0 , (float) Math.sin(state.pan) * delta * 10f);
-      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP)) state.distance -= delta * 10f;
-      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN)) state.distance += delta * 10f;
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP)) state.distance -= delta * 25f;
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN)) state.distance += delta * 25f;
       if (Gdx.input.isKeyPressed(Input.Keys.A)) state.pan -= delta;
       if (Gdx.input.isKeyPressed(Input.Keys.D)) state.pan += delta;
       if (Gdx.input.isKeyPressed(Input.Keys.W)) state.tilt += delta;
@@ -174,7 +174,7 @@ public class GameplayScreen extends ScreenAdapter {
       if (state.cameraFocus.z < 0) state.cameraFocus.z = 0;
       if (state.cameraFocus.z > state.map.width) state.cameraFocus.z = state.map.width;
       if (state.distance < 5f) state.distance = 5f;
-      if (state.distance > 100f) state.distance = 100f;
+      if (state.distance > 200f) state.distance = 200f;
       if (state.tilt < Math.PI * 0.1) state.tilt = (float) Math.PI * 0.1f;
       if (state.tilt > Math.PI * 0.45) state.tilt = (float) Math.PI * 0.45f;
       updateCamera();

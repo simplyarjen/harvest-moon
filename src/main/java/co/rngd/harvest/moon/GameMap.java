@@ -134,21 +134,37 @@ public class GameMap {
     return (highValue + lowValue) * 0.5f;
   }
 
+  private static final int TILE_SIZE = 50;
+
   public Model createSurfaceModel(ModelBuilder modelBuilder) {
     modelBuilder.begin();
-    MeshPartBuilder meshBuilder = modelBuilder.part("surface", GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(0.7f, 0.7f, 0.8f, 1.0f)));
-    for (int row = 0; row < height; row++)
-      for (int column = 0; column < width; column++)
-        addCell(row, column, meshBuilder);
+    for (int rowBase = 0; rowBase < height; rowBase += TILE_SIZE) {
+      int h = rowBase + TILE_SIZE > height ? height - rowBase : TILE_SIZE;
+      for (int columnBase = 0; columnBase < width; columnBase += TILE_SIZE) {
+        int w = columnBase + TILE_SIZE > width ? width - columnBase : TILE_SIZE;
+        MeshPartBuilder meshBuilder = modelBuilder.part(String.format("surface-%d,%d", rowBase, columnBase), 
+            GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(0.7f, 0.7f, 0.8f, 1.0f)));
+        for (int row = 0; row < h; row++)
+          for (int column = 0; column < w; column++)
+            addCell(row + rowBase, column + columnBase, meshBuilder);
+      }
+    }
     return modelBuilder.end();
   }
 
   public Model createGridModel(ModelBuilder modelBuilder) {
     modelBuilder.begin();
-    MeshPartBuilder meshBuilder = modelBuilder.part("grid", GL20.GL_LINES, Usage.Position, new Material(ColorAttribute.createDiffuse(1.0f, 0.0f, 0.0f, 1.0f)));
-    for (int row = 0; row < height; row++)
-      for (int column = 0; column < width; column++)
-        addGridCell(row, column, meshBuilder);
+    for (int rowBase = 0; rowBase < height; rowBase += TILE_SIZE) {
+      int h = rowBase + TILE_SIZE > height ? height - rowBase : TILE_SIZE;
+      for (int columnBase = 0; columnBase < width; columnBase += TILE_SIZE) {
+        int w = columnBase + TILE_SIZE > width ? width - columnBase : TILE_SIZE;
+        MeshPartBuilder meshBuilder = modelBuilder.part(String.format("grid-%d,%d", rowBase, columnBase), 
+            GL20.GL_LINES, Usage.Position, new Material(ColorAttribute.createDiffuse(1.0f, 0.0f, 0.0f, 1.0f)));
+        for (int row = 0; row < h; row++)
+          for (int column = 0; column < w; column++)
+            addGridCell(row + rowBase, column + columnBase, meshBuilder);
+      }
+    }
     return modelBuilder.end();
   }
 
