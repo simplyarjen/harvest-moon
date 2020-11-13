@@ -4,6 +4,7 @@ import java.io.*;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.math.*;
+import com.badlogic.gdx.math.collision.*;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g3d.*;
@@ -134,6 +135,10 @@ public class GameMap {
     return (highValue + lowValue) * 0.5f;
   }
 
+  public int height(int row, int column) {
+    return heightMap[row * (width + 1) + column];
+  }
+
   private static final int TILE_SIZE = 50;
 
   public Model createSurfaceModel(ModelBuilder modelBuilder) {
@@ -142,7 +147,7 @@ public class GameMap {
       int h = rowBase + TILE_SIZE > height ? height - rowBase : TILE_SIZE;
       for (int columnBase = 0; columnBase < width; columnBase += TILE_SIZE) {
         int w = columnBase + TILE_SIZE > width ? width - columnBase : TILE_SIZE;
-        MeshPartBuilder meshBuilder = modelBuilder.part(String.format("surface-%d,%d", rowBase, columnBase), 
+        MeshPartBuilder meshBuilder = modelBuilder.part(String.format("surface-%d,%d", rowBase, columnBase),
             GL20.GL_TRIANGLES, Usage.Position | Usage.Normal, new Material(ColorAttribute.createDiffuse(0.7f, 0.7f, 0.8f, 1.0f)));
         for (int row = 0; row < h; row++)
           for (int column = 0; column < w; column++)
@@ -158,7 +163,7 @@ public class GameMap {
       int h = rowBase + TILE_SIZE > height ? height - rowBase : TILE_SIZE;
       for (int columnBase = 0; columnBase < width; columnBase += TILE_SIZE) {
         int w = columnBase + TILE_SIZE > width ? width - columnBase : TILE_SIZE;
-        MeshPartBuilder meshBuilder = modelBuilder.part(String.format("grid-%d,%d", rowBase, columnBase), 
+        MeshPartBuilder meshBuilder = modelBuilder.part(String.format("grid-%d,%d", rowBase, columnBase),
             GL20.GL_LINES, Usage.Position, new Material(ColorAttribute.createDiffuse(1.0f, 0.0f, 0.0f, 1.0f)));
         for (int row = 0; row < h; row++)
           for (int column = 0; column < w; column++)

@@ -22,10 +22,10 @@ public class HarvestMoon extends Game {
 
     GameplayScreen gameplayScreen = new GameplayScreen(modelBatch, spriteBatch, textureCache);
 
-    GameMap map = new GameMap(600, 600, 5);
-    map.crater(300, 300, 200, 100, 9, 3);
-    map.updateControlPoints();
-    gameplayScreen.setMap(map);
+    RandomMap rm = new RandomMap();
+    rm.width = 60;
+    rm.height = 60;
+    gameplayScreen.setMap(rm.generate());
     setScreen(gameplayScreen);
   }
 

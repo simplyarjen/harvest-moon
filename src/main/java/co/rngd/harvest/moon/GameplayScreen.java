@@ -5,9 +5,11 @@ import java.io.*;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.graphics.g3d.*;
 import com.badlogic.gdx.graphics.g3d.utils.*;
+import com.badlogic.gdx.graphics.g3d.utils.shapebuilders.*;
 import com.badlogic.gdx.graphics.g3d.attributes.*;
 import com.badlogic.gdx.graphics.g3d.environment.*;
 
@@ -66,6 +68,7 @@ public class GameplayScreen extends ScreenAdapter {
 
   private ModelInstance mapModel;
   private ModelInstance gridModel;
+  private ModelInstance selectionModel;
 
   private ImageButton pauseButton;
   private PauseMenu pauseMenu;
@@ -91,6 +94,17 @@ public class GameplayScreen extends ScreenAdapter {
     ModelBuilder modelBuilder = new ModelBuilder();
     mapModel = new ModelInstance(state.map.createSurfaceModel(modelBuilder));
     gridModel = new ModelInstance(state.map.createGridModel(modelBuilder));
+    selectionModel = new ModelInstance(makeSelectionModel(modelBuilder));
+  }
+
+  Model makeSelectionModel(ModelBuilder builder) {
+    builder.begin();
+    MeshPartBuilder meshBuilder = builder.part("selection",
+        GL20.GL_TRIANGLES, Usage.Position | Usage.Normal,
+        new Material(ColorAttribute.createDiffuse(0.7f, 0.7f, 0.0f, 1f),
+          new BlendingAttribute(0.5f)));
+    BoxShapeBuilder.build(meshBuilder, 0f, 0f, 0f, 1f, 2f, 1f);
+    return builder.end();
   }
 
   public void setState(State state) {
@@ -138,6 +152,20 @@ public class GameplayScreen extends ScreenAdapter {
     updateCamera();
 
     spriteBatch.setProjectionMatrix(new Matrix4().setToOrtho2D(0, 0, width, height));
+  }
+
+  private void updateSelectionModel() {
+    int r = (int) state.cameraFocus.x, c = (int) state.cameraFocus.z;
+    if (r < 0) r = 0;
+    if (r >= state.map.height) r = state.map.height - 1;
+    if (c < 0) c = 0;
+    if (c >= state.map.width) c = state.map.width - 1;
+    int h00 = state.map.height(r, c);
+    int h01 = state.map.height(r, c + 1);
+    int h10 = state.map.height(r + 1, c);
+    int h11 = state.map.height(r + 1, c + 1);
+    int hmin = h00 < h01 ? h00 : h01 < h10 ? h01 : h10 < h11 ? h10 : h11;
+    selectionModel.transform.setToTranslation(r + 0.5f, hmin + 1f, c + 0.5f);
   }
 
   @Override
@@ -192,8 +220,11 @@ public class GameplayScreen extends ScreenAdapter {
     pauseButton.update();
     if (state.pauseMode) pauseMenu.update();
 
+    updateSelectionModel();
+
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
+    modelBatch.render(selectionModel, environment);
     if (state.showGrid) {
       gridModel.transform.setToTranslation(0, state.distance / 1000f, 0);
       modelBatch.render(gridModel, environment);
