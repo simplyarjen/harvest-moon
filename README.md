@@ -45,6 +45,7 @@ Harvest Moon is made possible thanks to the following awesome free and open sour
 * graphics by Kenney [kenney.nl](https://kenney.nl/) ([license](credits/kenney-license))
   * [Game Icons](https://kenney.nl/assets/game-icons)
   * [UI Pack: Space Expansion](https://kenney.nl/assets/ui-pack-space-expansion)
+  * [Space Kit](https://kenney.nl/assets/space-kit)
 
 ## License
 
