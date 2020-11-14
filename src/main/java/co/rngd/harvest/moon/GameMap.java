@@ -14,14 +14,13 @@ import com.badlogic.gdx.graphics.g3d.environment.*;
 
 public class GameMap {
   public static final DataStore<GameMap> Store = new DataStore<GameMap>() {
-    private static final int VERSION = 3;
+    private static final int VERSION = 2;
 
     @Override
     public void writeTo(GameMap map, DataOutput output) throws IOException {
       output.writeInt(VERSION);
       output.writeInt(map.width);
       output.writeInt(map.height);
-      output.writeInt(map.baseHeight);
       for (int i = 0; i < map.heightMap.length; i++)
         output.writeInt(map.heightMap[i]);
     }
@@ -30,8 +29,8 @@ public class GameMap {
     public GameMap readFrom(DataInput input) throws IOException {
       int version = input.readInt();
       if (version != VERSION) fail("GameMap version mismatch");
-      int width = input.readInt(), height = input.readInt(), baseHeight = input.readInt();
-      GameMap result = new GameMap(width, height, baseHeight);
+      int width = input.readInt(), height = input.readInt();
+      GameMap result = new GameMap(width, height);
       for (int i = 0; i < result.heightMap.length; i++)
         result.heightMap[i] = input.readInt();
       result.updateControlPoints();
@@ -39,18 +38,16 @@ public class GameMap {
     }
   };
 
-  public final int width, height, baseHeight;
+  public final int width, height;
   private final int[] heightMap;
   private final Vector3[] controlPoints;
 
-  public GameMap(int width, int height, int baseHeight) {
+  public GameMap(int width, int height) {
     this.width = width;
     this.height = height;
-    this.baseHeight = baseHeight;
     this.controlPoints = new Vector3[width * height * 5];
     for (int i = 0; i < this.controlPoints.length; i++) this.controlPoints[i] = new Vector3();
     this.heightMap = new int[(width + 1) * (height + 1)];
-    for (int i = 0; i <this.heightMap.length; i++) this.heightMap[i] = baseHeight;
   }
 
   public void raise(int row, int column, int toLevel) {

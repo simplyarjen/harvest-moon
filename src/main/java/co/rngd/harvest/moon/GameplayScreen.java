@@ -82,7 +82,7 @@ public class GameplayScreen extends ScreenAdapter {
 
   public void setMap(GameMap map) {
     state.map = map;
-    state.cameraFocus.set(map.height / 2, map.baseHeight, map.width / 2);
+    state.cameraFocus.set(map.height / 2, 0, map.width / 2);
 
     rebuildMapModels();
   }
