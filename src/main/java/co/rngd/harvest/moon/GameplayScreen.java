@@ -4,6 +4,7 @@ import java.io.*;
 
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.math.*;
+import com.badlogic.gdx.math.collision.*;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.g2d.*;
@@ -69,6 +70,7 @@ public class GameplayScreen extends ScreenAdapter {
   private ModelInstance mapModel;
   private ModelInstance gridModel;
   private ModelInstance selectionModel;
+  private boolean showSelection;
 
   private ImageButton pauseButton;
   private PauseMenu pauseMenu;
@@ -155,7 +157,15 @@ public class GameplayScreen extends ScreenAdapter {
   }
 
   private void updateSelectionModel() {
-    int r = (int) state.cameraFocus.x, c = (int) state.cameraFocus.z;
+    Ray ray = camera.getPickRay(Gdx.input.getX(), Gdx.input.getY());
+    Vector3 selected = state.map.intercept(ray);
+    if (selected == null) {
+      showSelection = false;
+      return;
+    }
+    showSelection = true;
+
+    int r = (int) selected.x, c = (int) selected.z;
     if (r < 0) r = 0;
     if (r >= state.map.height) r = state.map.height - 1;
     if (c < 0) c = 0;
@@ -229,7 +239,7 @@ public class GameplayScreen extends ScreenAdapter {
 
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
-    modelBatch.render(selectionModel, environment);
+    if (showSelection && !state.pauseMode) modelBatch.render(selectionModel, environment);
     if (state.showGrid) {
       gridModel.transform.setToTranslation(0, state.distance / 1000f, 0);
       modelBatch.render(gridModel, environment);

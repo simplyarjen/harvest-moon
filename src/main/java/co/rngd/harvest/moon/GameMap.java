@@ -41,6 +41,7 @@ public class GameMap {
   public final int width, height;
   private final int[] heightMap;
   private final Vector3[] controlPoints;
+  private int minHeight, maxHeight;
 
   public GameMap(int width, int height) {
     this.width = width;
@@ -102,14 +103,24 @@ public class GameMap {
 
   public void updateControlPoints() {
     int index = 0;
+    minHeight = Integer.MAX_VALUE;
+    maxHeight = Integer.MIN_VALUE;
     for (int row = 0; row < height; row++) {
       for (int column = 0; column < width; column++) {
         int hmIndex = row * (width + 1) + column;
-        float h00 = heightMap[hmIndex],
+        int   h00 = heightMap[hmIndex],
               h01 = heightMap[hmIndex + 1],
               h10 = heightMap[hmIndex + width + 1],
-              h11 = heightMap[hmIndex + width + 2],
-              h55 = centerHeight(h00, h01, h10, h11);
+              h11 = heightMap[hmIndex + width + 2];
+        if (h00 > maxHeight) maxHeight = h00;
+        if (h01 > maxHeight) maxHeight = h01;
+        if (h10 > maxHeight) maxHeight = h10;
+        if (h11 > maxHeight) maxHeight = h11;
+        if (h00 < minHeight) minHeight = h00;
+        if (h01 < minHeight) minHeight = h01;
+        if (h10 < minHeight) minHeight = h10;
+        if (h11 < minHeight) minHeight = h11;
+        float h55 = centerHeight(h00, h01, h10, h11);
         controlPoints[index++].set(row,        h00, column       );
         controlPoints[index++].set(row,        h01, column +   1f);
         controlPoints[index++].set(row +   1f, h11, column +   1f);
@@ -120,10 +131,10 @@ public class GameMap {
   }
 
   // computes the center height, is only guaranteed to work if height differs by at most 1 within a cell
-  private float centerHeight(float h00, float h01, float h10, float h11) {
+  private float centerHeight(int h00, int h01, int h10, int h11) {
     int high = 0;
-    float lowValue = h00 < h01 ? h00 : h01 < h10 ? h01 : h10 < h11 ? h10 : h11;
-    float highValue = h00 > h01 ? h00 : h01 > h10 ? h01 : h10 > h11 ? h10 : h11;
+    int lowValue = h00 < h01 ? h00 : h01 < h10 ? h01 : h10 < h11 ? h10 : h11;
+    int highValue = h00 > h01 ? h00 : h01 > h10 ? h01 : h10 > h11 ? h10 : h11;
     if (h00 > lowValue) high += 1;
     if (h01 > lowValue) high += 1;
     if (h10 > lowValue) high += 1;
@@ -136,6 +147,63 @@ public class GameMap {
 
   public int height(int row, int column) {
     return heightMap[row * (width + 1) + column];
+  }
+
+  private static final float EPS = 1e-5f;
+  public Vector3 intercept(Ray ray) {
+    Vector3 min = new Vector3(0, minHeight, 0),
+            max = new Vector3().set(width, maxHeight, height),
+            rBase = new Vector3(ray.origin),
+            rDir = new Vector3(ray.direction),
+            s = new Vector3(1, 1, 1);
+    // normalise to positive directions
+    if (rDir.x < 0) { rDir.x = -rDir.x; rBase.x = -rBase.x; float tmp = min.x; min.x = -max.x; max.x = -tmp; s.x = -s.x; }
+    if (rDir.y < 0) { rDir.y = -rDir.y; rBase.y = -rBase.y; float tmp = min.y; min.y = -max.y; max.y = -tmp; s.y = -s.y; }
+    if (rDir.z < 0) { rDir.z = -rDir.z; rBase.z = -rBase.z; float tmp = min.z; min.z = -max.z; max.z = -tmp; s.z = -s.z; }
+
+    Vector3 invDir = new Vector3( 1.0f / rDir.x, 1.0f / rDir.y, 1.0f / rDir.z);
+
+    min.sub(rBase).scl(invDir);
+    max.sub(rBase).scl(invDir);
+    float tMin = 0;
+    if (min.x > tMin) tMin = min.x;
+    if (min.y > tMin) tMin = min.y;
+    if (min.z > tMin) tMin = min.z;
+    float tMax = max.x;
+    if (max.y < tMax) tMax = max.y;
+    if (max.z < tMax) tMax = max.z;
+
+    // march the ray segment
+    float time = tMin;
+    Vector3 pos = new Vector3(), tmp = new Vector3();
+
+    while (time < tMax) {
+      pos.set(rDir).scl(time).add(rBase);
+      int r = (int) pos.x,
+          h = (int) pos.y,
+          c = (int) pos.z;
+      int row = (int) (pos.x * s.x),
+          ht = (int) (pos.y * s.y),
+          col = (int) (pos.z * s.z);
+      if (row >= 0 && row <= height)
+      if (col >= 0 && col <= width)
+      if (Math.abs(ht - height(row, col)) <= 1) {
+        int index = controlIndex(row, col);
+        if (Intersector.intersectRayTriangle(ray, controlPoints[index + 0], controlPoints[index + 1], controlPoints[index + 4], tmp)) return tmp;
+        if (Intersector.intersectRayTriangle(ray, controlPoints[index + 1], controlPoints[index + 2], controlPoints[index + 4], tmp)) return tmp;
+        if (Intersector.intersectRayTriangle(ray, controlPoints[index + 2], controlPoints[index + 3], controlPoints[index + 4], tmp)) return tmp;
+        if (Intersector.intersectRayTriangle(ray, controlPoints[index + 3], controlPoints[index + 0], controlPoints[index + 4], tmp)) return tmp;
+      }
+
+      tmp.set(pos).sub(r, h, c);
+      if (tmp.x < EPS) tmp.x = 1f;
+      if (tmp.y < EPS) tmp.y = 1f;
+      if (tmp.z < EPS) tmp.z = 1f;
+      tmp.scl(invDir);
+      float dt = tmp.x <= tmp.y ? (tmp.x <= tmp.z ? tmp.x : tmp.z) : (tmp.y <= tmp.z ? tmp.y : tmp.z);
+      time += dt;
+    }
+    return null;
   }
 
   private static final int TILE_SIZE = 50;
