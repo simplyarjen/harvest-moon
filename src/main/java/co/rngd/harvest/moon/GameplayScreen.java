@@ -82,7 +82,7 @@ public class GameplayScreen extends ScreenAdapter {
 
   public void setMap(GameMap map) {
     state.map = map;
-    state.cameraFocus.set(map.height / 2, 0, map.width / 2);
+    state.cameraFocus.set(map.height / 2, map.baseHeight, map.width / 2);
 
     rebuildMapModels();
   }
@@ -118,7 +118,7 @@ public class GameplayScreen extends ScreenAdapter {
   public void show() {
     camera = new PerspectiveCamera(30, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     camera.near = 1f;
-    camera.far = 500f;
+    camera.far = 1000f;
     updateCamera();
 
     Gdx.input.setInputProcessor(new Controller());
@@ -174,6 +174,11 @@ public class GameplayScreen extends ScreenAdapter {
     if (gridModel != null) gridModel.model.dispose();
   }
 
+  private static final float MIN_DIST = 5f, MAX_DIST = 200f, V_DIST = 25f;
+  private static final float V_MOVE = 20f;
+  private static final float MIN_TILT = (float) Math.PI * 0.1f, MAX_TILT = (float) Math.PI * 0.45f, V_TILT = 1f;
+  private static final float V_PAN = 1f;
+
   @Override
   public void render(float delta) {
     int width = Gdx.graphics.getWidth();
@@ -183,28 +188,28 @@ public class GameplayScreen extends ScreenAdapter {
 
     if (!state.pauseMode) {
       if (Gdx.input.isKeyPressed(Input.Keys.UP))
-        state.cameraFocus.sub((float) Math.sin(state.pan) * delta * 10f, 0 , (float) Math.cos(state.pan) * delta * 10f);
+        state.cameraFocus.sub((float) Math.sin(state.pan) * delta * V_MOVE, 0 , (float) Math.cos(state.pan) * delta * V_MOVE);
       if (Gdx.input.isKeyPressed(Input.Keys.DOWN))
-        state.cameraFocus.add((float) Math.sin(state.pan) * delta * 10f, 0 , (float) Math.cos(state.pan) * delta * 10f);
+        state.cameraFocus.add((float) Math.sin(state.pan) * delta * V_MOVE, 0 , (float) Math.cos(state.pan) * delta * V_MOVE);
       if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-        state.cameraFocus.add((float) -Math.cos(state.pan) * delta * 10f, 0 , (float) Math.sin(state.pan) * delta * 10f);
+        state.cameraFocus.add((float) -Math.cos(state.pan) * delta * V_MOVE, 0 , (float) Math.sin(state.pan) * delta * V_MOVE);
       if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-        state.cameraFocus.sub((float) -Math.cos(state.pan) * delta * 10f, 0 , (float) Math.sin(state.pan) * delta * 10f);
-      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP)) state.distance -= delta * 25f;
-      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN)) state.distance += delta * 25f;
-      if (Gdx.input.isKeyPressed(Input.Keys.A)) state.pan -= delta;
-      if (Gdx.input.isKeyPressed(Input.Keys.D)) state.pan += delta;
-      if (Gdx.input.isKeyPressed(Input.Keys.W)) state.tilt += delta;
-      if (Gdx.input.isKeyPressed(Input.Keys.S)) state.tilt -= delta;
+        state.cameraFocus.sub((float) -Math.cos(state.pan) * delta * V_MOVE, 0 , (float) Math.sin(state.pan) * delta * V_MOVE);
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_UP)) state.distance -= delta * V_DIST;
+      if (Gdx.input.isKeyPressed(Input.Keys.PAGE_DOWN)) state.distance += delta * V_DIST;
+      if (Gdx.input.isKeyPressed(Input.Keys.A)) state.pan -= delta * V_PAN;
+      if (Gdx.input.isKeyPressed(Input.Keys.D)) state.pan += delta * V_PAN;
+      if (Gdx.input.isKeyPressed(Input.Keys.W)) state.tilt += delta * V_TILT;
+      if (Gdx.input.isKeyPressed(Input.Keys.S)) state.tilt -= delta * V_TILT;
 
       if (state.cameraFocus.x < 0) state.cameraFocus.x = 0;
       if (state.cameraFocus.x > state.map.height) state.cameraFocus.x = state.map.height;
       if (state.cameraFocus.z < 0) state.cameraFocus.z = 0;
       if (state.cameraFocus.z > state.map.width) state.cameraFocus.z = state.map.width;
-      if (state.distance < 5f) state.distance = 5f;
-      if (state.distance > 200f) state.distance = 200f;
-      if (state.tilt < Math.PI * 0.1) state.tilt = (float) Math.PI * 0.1f;
-      if (state.tilt > Math.PI * 0.45) state.tilt = (float) Math.PI * 0.45f;
+      if (state.distance < MIN_DIST) state.distance = MIN_DIST;
+      if (state.distance > MAX_DIST) state.distance = MAX_DIST;
+      if (state.tilt < MIN_TILT) state.tilt = MIN_TILT;
+      if (state.tilt > MAX_TILT) state.tilt = MAX_TILT;
       updateCamera();
     }
     if (pauseButton.wasPressed()) state.pauseMode = !state.pauseMode;

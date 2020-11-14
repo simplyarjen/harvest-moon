@@ -14,13 +14,14 @@ import com.badlogic.gdx.graphics.g3d.environment.*;
 
 public class GameMap {
   public static final DataStore<GameMap> Store = new DataStore<GameMap>() {
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     @Override
     public void writeTo(GameMap map, DataOutput output) throws IOException {
       output.writeInt(VERSION);
       output.writeInt(map.width);
       output.writeInt(map.height);
+      output.writeInt(map.baseHeight);
       for (int i = 0; i < map.heightMap.length; i++)
         output.writeInt(map.heightMap[i]);
     }
@@ -29,8 +30,8 @@ public class GameMap {
     public GameMap readFrom(DataInput input) throws IOException {
       int version = input.readInt();
       if (version != VERSION) fail("GameMap version mismatch");
-      int width = input.readInt(), height = input.readInt();
-      GameMap result = new GameMap(width, height, 0);
+      int width = input.readInt(), height = input.readInt(), baseHeight = input.readInt();
+      GameMap result = new GameMap(width, height, baseHeight);
       for (int i = 0; i < result.heightMap.length; i++)
         result.heightMap[i] = input.readInt();
       result.updateControlPoints();
@@ -38,13 +39,14 @@ public class GameMap {
     }
   };
 
-  public final int width, height;
+  public final int width, height, baseHeight;
   private final int[] heightMap;
   private final Vector3[] controlPoints;
 
   public GameMap(int width, int height, int baseHeight) {
     this.width = width;
     this.height = height;
+    this.baseHeight = baseHeight;
     this.controlPoints = new Vector3[width * height * 5];
     for (int i = 0; i < this.controlPoints.length; i++) this.controlPoints[i] = new Vector3();
     this.heightMap = new int[(width + 1) * (height + 1)];
@@ -164,7 +166,7 @@ public class GameMap {
       for (int columnBase = 0; columnBase < width; columnBase += TILE_SIZE) {
         int w = columnBase + TILE_SIZE > width ? width - columnBase : TILE_SIZE;
         MeshPartBuilder meshBuilder = modelBuilder.part(String.format("grid-%d,%d", rowBase, columnBase),
-            GL20.GL_LINES, Usage.Position, new Material(ColorAttribute.createDiffuse(1.0f, 0.0f, 0.0f, 1.0f)));
+            GL20.GL_LINES, Usage.Position, new Material(ColorAttribute.createDiffuse(0.6f, 0.5f, 0.2f, 1.0f)));
         for (int row = 0; row < h; row++)
           for (int column = 0; column < w; column++)
             addGridCell(row + rowBase, column + columnBase, meshBuilder);
