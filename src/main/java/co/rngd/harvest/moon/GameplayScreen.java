@@ -97,14 +97,19 @@ public class GameplayScreen extends ScreenAdapter {
     mapModel = new ModelInstance(state.map.createSurfaceModel(modelBuilder));
     gridModel = new ModelInstance(state.map.createGridModel(modelBuilder));
     selectionModel = new ModelInstance(makeSelectionModel(modelBuilder));
+    state.map.updateObjectModels();
   }
 
   Model makeSelectionModel(ModelBuilder builder) {
     builder.begin();
     MeshPartBuilder meshBuilder = builder.part("selection",
         GL20.GL_TRIANGLES, Usage.Position | Usage.Normal,
-        new Material(ColorAttribute.createDiffuse(0.7f, 0.7f, 0.0f, 1f),
-          new BlendingAttribute(0.5f)));
+        new Material(
+          ColorAttribute.createDiffuse(0.9f, 0.9f, 0.0f, 1f),
+          new BlendingAttribute(0.2f),
+          new ColorAttribute(ColorAttribute.AmbientLight, 0.9f, 0.9f, 0.9f, 1f)
+          ));
+    BoxShapeBuilder.build(meshBuilder, 0f, 0f, 0f, -1f, -2f, -1f);
     BoxShapeBuilder.build(meshBuilder, 0f, 0f, 0f, 1f, 2f, 1f);
     return builder.end();
   }
@@ -239,7 +244,9 @@ public class GameplayScreen extends ScreenAdapter {
 
     modelBatch.begin(camera);
     modelBatch.render(mapModel, environment);
-    if (showSelection && !state.pauseMode) modelBatch.render(selectionModel, environment);
+    for (ModelInstance instance : state.map.getObjectModels())
+      modelBatch.render(instance, environment);
+    if (!state.pauseMode) modelBatch.render(selectionModel, environment);
     if (state.showGrid) {
       gridModel.transform.setToTranslation(0, state.distance / 1000f, 0);
       modelBatch.render(gridModel, environment);

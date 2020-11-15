@@ -377,7 +377,8 @@
 	"nodes": [
 		{
 			"id": "rock", 
-			"translation": [-20.000000,  0.000000, -15.000000], 
+			"translation": [0.000000,  0.000000, 0.000000], 
+      "scale": [0.1, 0.1, 0.1],
 			"parts": [
 				{
 					"meshpartid": "shape1_part2", 

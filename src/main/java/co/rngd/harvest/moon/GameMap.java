@@ -1,8 +1,10 @@
 package co.rngd.harvest.moon;
 
 import java.io.*;
+import java.util.*;
 
 import com.badlogic.gdx.*;
+import com.badlogic.gdx.assets.*;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.math.collision.*;
 import com.badlogic.gdx.graphics.*;
@@ -13,8 +15,11 @@ import com.badlogic.gdx.graphics.g3d.attributes.*;
 import com.badlogic.gdx.graphics.g3d.environment.*;
 
 public class GameMap {
-  public static final DataStore<GameMap> Store = new DataStore<GameMap>() {
-    private static final int VERSION = 2;
+  public static class GameMapDataStore implements DataStore<GameMap> {
+    private static final int VERSION = 4;
+    private AssetManager assetManager;
+
+    public void setAssetManager(AssetManager value) { this.assetManager = value; }
 
     @Override
     public void writeTo(GameMap map, DataOutput output) throws IOException {
@@ -23,6 +28,8 @@ public class GameMap {
       output.writeInt(map.height);
       for (int i = 0; i < map.heightMap.length; i++)
         output.writeInt(map.heightMap[i]);
+      for (int i = 0; i < map.objectMap.length; i++)
+        output.writeInt(map.objectMap[i]);
     }
 
     @Override
@@ -30,25 +37,37 @@ public class GameMap {
       int version = input.readInt();
       if (version != VERSION) fail("GameMap version mismatch");
       int width = input.readInt(), height = input.readInt();
-      GameMap result = new GameMap(width, height);
+      GameMap result = new GameMap(width, height, assetManager);
       for (int i = 0; i < result.heightMap.length; i++)
         result.heightMap[i] = input.readInt();
+      for (int i = 0; i < result.objectMap.length; i++)
+        result.objectMap[i] = input.readInt();
       result.updateControlPoints();
+      result.updateObjectModels();
       return result;
     }
   };
+  public static final GameMapDataStore Store = new GameMapDataStore();
+
+  private static final String OBJECT_NAMES[] = new String[] { null, "models/rock.g3dj", "models/rock_crystals.g3dj" };
 
   public final int width, height;
+  private final AssetManager assetManager;
   private final int[] heightMap;
+  private final int[] objectMap;
   private final Vector3[] controlPoints;
+  private final List<ModelInstance> objectModels;
   private int minHeight, maxHeight;
 
-  public GameMap(int width, int height) {
+  public GameMap(int width, int height, AssetManager assetManager) {
     this.width = width;
     this.height = height;
+    this.assetManager = assetManager;
     this.controlPoints = new Vector3[width * height * 5];
     for (int i = 0; i < this.controlPoints.length; i++) this.controlPoints[i] = new Vector3();
     this.heightMap = new int[(width + 1) * (height + 1)];
+    this.objectMap = new int[width * height];
+    this.objectModels = new ArrayList<>();
   }
 
   public void raise(int row, int column, int toLevel) {
@@ -101,6 +120,15 @@ public class GameMap {
     }
   }
 
+  public void setObject(int row, int column, int objectId) {
+    if (objectId >= OBJECT_NAMES.length) throw new IllegalArgumentException("Bad objectId: " + objectId);
+    objectMap[row * width + column] = objectId;
+  }
+
+  public int getObjectId(int row, int column) {
+    return objectMap[row * width + column];
+  }
+
   public void updateControlPoints() {
     int index = 0;
     minHeight = Integer.MAX_VALUE;
@@ -149,10 +177,39 @@ public class GameMap {
     return heightMap[row * (width + 1) + column];
   }
 
-  private static final float EPS = 1e-5f;
+  public boolean isFlat(int row, int column) {
+    int index = row * (width + 1) + column;
+    return heightMap[index] == heightMap[index + 1] &&
+           heightMap[index] == heightMap[index + width + 1] &&
+           heightMap[index] == heightMap[index + width + 2];
+  }
+
+  public void updateObjectModels() {
+    for (String name : OBJECT_NAMES) {
+      if (name != null && !assetManager.contains(name)) assetManager.load(name, Model.class);
+    }
+    objectModels.clear();
+    int index = 0;
+    for (int row = 0; row < height; row++) {
+      for (int column = 0; column < width; column++) {
+        String objectName = OBJECT_NAMES[objectMap[index++]];
+        if (objectName != null) {
+          Model objectModel = assetManager.finishLoadingAsset(objectName);
+          Matrix4 position = new Matrix4().setToTranslation(controlPoints[controlIndex(row, column) + 4]);
+          objectModels.add(new ModelInstance(objectModel, position));
+        }
+      }
+    }
+  }
+
+  public List<ModelInstance> getObjectModels() {
+    return objectModels;
+  }
+
+  private static final float EPS = 1e-9f;
   public Vector3 intercept(Ray ray) {
-    Vector3 min = new Vector3(0, minHeight, 0),
-            max = new Vector3().set(width, maxHeight, height),
+    Vector3 min = new Vector3(-1, minHeight - 1, -1),
+            max = new Vector3().set(width + 1, maxHeight + 1, height + 1),
             rBase = new Vector3(ray.origin),
             rDir = new Vector3(ray.direction),
             s = new Vector3(1, 1, 1);
@@ -185,9 +242,9 @@ public class GameMap {
       int row = (int) (pos.x * s.x),
           ht = (int) (pos.y * s.y),
           col = (int) (pos.z * s.z);
-      if (row >= 0 && row <= height)
-      if (col >= 0 && col <= width)
-      if (Math.abs(ht - height(row, col)) <= 1) {
+      if (row >= 0 && row < height)
+      if (col >= 0 && col < width)
+      if (Math.abs(ht - height(row, col)) <= 3) {
         int index = controlIndex(row, col);
         if (Intersector.intersectRayTriangle(ray, controlPoints[index + 0], controlPoints[index + 1], controlPoints[index + 4], tmp)) return tmp;
         if (Intersector.intersectRayTriangle(ray, controlPoints[index + 1], controlPoints[index + 2], controlPoints[index + 4], tmp)) return tmp;

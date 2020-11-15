@@ -12,7 +12,7 @@ Moon-themed RTS game.
 - [x] As a player I want to zoom in and out on the map
 - [x] As a player I want the map tile under my cursor to be highlighted
 - [x] As a level designer I want to vary the height of the map
-- [ ] As a level designer I want to place cheese stones on the map
+- [x] As a level designer I want to place cheese stones on the map
 - [ ] As a level designer I want to place a base on the map
 - [ ] As a player I want to select which map to play
 - [ ] As a player I want to select objects on the map
